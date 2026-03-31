@@ -1,0 +1,41 @@
+{
+  "name": "cinematheque",
+  "version": "1.1.0",
+  "description": "Cinematheque - Yerel Film Kutuphanesi",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "com.cinematheque.app",
+    "productName": "Cinematheque",
+    "directories": {
+      "output": "../cinematheque-exe"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "favicon.svg",
+      "opengraph.jpg",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "favicon.svg"
+    },
+    "portable": {
+      "artifactName": "Cinematheque.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

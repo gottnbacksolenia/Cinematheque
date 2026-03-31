@@ -25,4 +25,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   /** Resolve a file path given a folder path and filename. */
   resolveFilePath: (folder, filename) =>
     ipcRenderer.invoke("resolve-file-path", folder, filename),
+
+  onUpdateAvailable: (cb) => ipcRenderer.on("update-available", (_e, info) => cb(info)),
+  openDownloadUrl: (url) => ipcRenderer.send("open-download-url", url),
 });

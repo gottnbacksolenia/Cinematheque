@@ -1,6 +1,6 @@
 {
   "name": "cinematheque",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Cinematheque - Yerel Film Kutuphanesi",
   "main": "main.js",
   "scripts": {

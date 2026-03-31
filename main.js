@@ -1,4 +1,50 @@
 const { app, BrowserWindow, shell, ipcMain } = require("electron");
+
+const RELEASES_API = "https://api.github.com/repos/gottnbacksolenia/Mediamovie/releases/latest";
+
+function semverGt(a, b) {
+  const pa = a.split(".").map(n => parseInt(n, 10) || 0);
+  const pb = b.split(".").map(n => parseInt(n, 10) || 0);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const na = pa[i] ?? 0;
+    const nb = pb[i] ?? 0;
+    if (na > nb) return true;
+    if (na < nb) return false;
+  }
+  return false;
+}
+
+async function checkForUpdates() {
+  try {
+    const currentVersion = app.getVersion();
+    const req = require("https").get(
+      RELEASES_API,
+      { headers: { "User-Agent": "CinemathequeApp", "Accept": "application/vnd.github+json" } },
+      (res) => {
+        let data = "";
+        res.on("data", chunk => data += chunk);
+        res.on("end", () => {
+          try {
+            if (res.statusCode !== 200) return;
+            const release = JSON.parse(data);
+            const latestTag = release.tag_name?.replace(/^v/, "") ?? "";
+            const asset = release.assets?.find(a => a.name.endsWith(".zip"));
+            if (latestTag && semverGt(latestTag, currentVersion) && mainWindow) {
+              mainWindow.webContents.send("update-available", {
+                version: latestTag,
+                downloadUrl: asset?.browser_download_url ?? release.html_url,
+                notes: release.body ?? ""
+              });
+            }
+          } catch {}
+        });
+      }
+    );
+    req.on("error", () => {});
+    req.end();
+  } catch {}
+}
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -117,6 +163,15 @@ function startServer(appDir, port) {
   });
 }
 
+ipcMain.on("open-download-url", (_event, url) => {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+      shell.openExternal(url);
+    }
+  } catch {}
+});
+
 ipcMain.on("register-file-path", (_event, { fileUrl, filePath }) => {
   if (fileUrl && filePath) {
     filePathRegistry.set(fileUrl, filePath);
@@ -222,6 +277,8 @@ async function createWindow() {
     mainWindow = null;
     if (server) server.close();
   });
+
+  setTimeout(checkForUpdates, 3000);
 }
 
 app.whenReady().then(createWindow);

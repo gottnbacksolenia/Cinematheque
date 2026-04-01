@@ -241,8 +241,21 @@ ipcMain.handle("open-in-player", async (_event, { filePath, fileName, playerKey 
 
 async function createWindow() {
   const appDir = getAppDir();
-  const port = await findFreePort();
-  server = await startServer(appDir, port);
+  let port = await findFreePort();
+  let serverStarted = false;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      server = await startServer(appDir, port);
+      serverStarted = true;
+      break;
+    } catch {
+      port = await findFreePort(port + 1);
+    }
+  }
+  if (!serverStarted) {
+    app.quit();
+    return;
+  }
 
   const preloadPath = path.join(__dirname, "preload.js");
 
@@ -267,6 +280,13 @@ async function createWindow() {
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
   });
+
+  // Safety net: force-show window after 10 seconds if ready-to-show never fires
+  const showTimeout = setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) mainWindow.show();
+  }, 10000);
+
+  mainWindow.once("ready-to-show", () => clearTimeout(showTimeout));
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
